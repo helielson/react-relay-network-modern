@@ -1,10 +1,11 @@
 /* @flow */
 
 import RelayRequest from './RelayRequest';
+import RRNLError from './RRNLError';
 import type { GraphQLResponseErrors, RelayRequestAny } from './definition';
 import type RelayResponse from './RelayResponse';
 
-class RRNLRequestError extends Error {
+export class RRNLRequestError extends RRNLError {
   req: RelayRequestAny;
   res: ?RelayResponse;
 
@@ -17,7 +18,7 @@ class RRNLRequestError extends Error {
 /**
  * Formats an error response from GraphQL server request.
  */
-export function formatRequestErrors(request: RelayRequest, errors: GraphQLResponseErrors): string {
+export function formatGraphQLErrors(request: RelayRequest, errors: GraphQLResponseErrors): string {
   const CONTEXT_BEFORE = 20;
   const CONTEXT_LENGTH = 60;
 
@@ -63,7 +64,7 @@ export function createRequestError(req: RelayRequestAny, res?: RelayResponse) {
       (res ? `\n\n${res.toString()}` : '');
   } else if (res.errors) {
     if (req instanceof RelayRequest) {
-      errorReason = formatRequestErrors(req, res.errors);
+      errorReason = formatGraphQLErrors(req, res.errors);
     } else {
       errorReason = JSON.stringify(res.errors);
     }

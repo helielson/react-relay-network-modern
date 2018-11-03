@@ -1,7 +1,7 @@
 # ReactRelayNetworkModern (for Relay Modern)
 
-[![](https://img.shields.io/npm/v/react-relay-network-modern.svg)](https://www.npmjs.com/package/react-relay-network-modern)
-[![npm](https://img.shields.io/npm/dt/react-relay-network-modern.svg)](http://www.npmtrends.com/react-relay-network-modern)
+[![npm](https://img.shields.io/npm/v/react-relay-network-modern.svg)](https://www.npmjs.com/package/react-relay-network-modern)
+[![trends](https://img.shields.io/npm/dt/react-relay-network-modern.svg)](http://www.npmtrends.com/react-relay-network-modern)
 [![Travis](https://img.shields.io/travis/relay-tools/react-relay-network-modern.svg?maxAge=2592000)](https://travis-ci.org/relay-tools/react-relay-network-modern)
 [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
@@ -16,7 +16,7 @@ Migration guide from v1 to v2 can be found [here](https://github.com/relay-tools
 
 `ReactRelayNetworkModern` can be used in browser, react-native or node server for rendering. Under the hood this module uses global `fetch` method. So if your client is too old, please import explicitly proper polyfill to your code (eg. `whatwg-fetch`, `node-fetch` or `fetch-everywhere`).
 
-# Install
+## Install
 
 ```bash
 yarn add react-relay-network-modern
@@ -42,8 +42,7 @@ resolve: {
 }
 ```
 
-
-#### What if `regeneratorRuntime is not defined`?
+### What if `regeneratorRuntime is not defined`?
 
 <img width="493" alt="screen shot 2018-02-20 at 20 07 45" src="https://user-images.githubusercontent.com/1946920/36428334-da402a6e-1679-11e8-9897-7e730ab3123e.png">
 
@@ -56,7 +55,7 @@ import 'regenerator-runtime/runtime';
 import { RelayNetworkLayer } from 'react-relay-network-modern';
 ```
 
-#### Different builds
+### Different builds
 
 This library contains different builds for any purposes:
 
@@ -72,9 +71,9 @@ import { RelayNetworkLayer } from 'react-relay-network-modern/node8';
 import { RelayNetworkLayer } from 'react-relay-network-modern/es';
 ```
 
-# Middlewares
+## Middlewares
 
-### Build-in middlewares:
+### Build-in middlewares
 
 * **your custom inline middleware** - [see example](https://github.com/relay-tools/react-relay-network-modern#example-of-injecting-networklayer-with-middlewares-on-the-client-side) below where added `credentials` and `headers` to the `fetch` method.
   * `next => req => { /* your modification of 'req' object */ return next(req); }`
@@ -101,11 +100,18 @@ import { RelayNetworkLayer } from 'react-relay-network-modern/es';
   * If you use `auth` middleware with `retry`, `retry` must be used before `auth`. Eg. if token expired when retries apply, then `retry` can call `auth` middleware again.
 * **retryMiddleware** - for request retry if the initial request fails.
   * `fetchTimeout` - number in milliseconds that defines in how much time will request timeout after it has been sent to the server again (default: `15000`).
-  * `retryDelays` - array of millisecond that defines the values on which retries are based on (default: `[1000, 3000]`). Or it may be a function `(attempt: number) => number | false` which returns a timeout in milliseconds for retry or false for disabling retry.
+  * `retryDelays` - array of millisecond that defines the values on which retries are based on (default: `[1000, 3000]`). Or it may be a function `(attempt: number) => number | false` which returns a timeout in milliseconds for retry or false for disabling retry (`attempt` starts from 0).
   * `statusCodes` - array of response status codes which will fire up retryMiddleware. Or it may be a function `(statusCode: number, req, res) => boolean` which makes retry if returned true. (default: `status < 200 or status > 300`).
-  * `forceRetry` - function(cb, delay), when request is delayed for next retry, middleware will call this function and pass to it a callback and delay time. When you call this callback `cb`, middleware will proceed request immediately (default: `false`).
+  * `beforeRetry` - function(meta: { forceRetry: Function, abort: Function, delay: number, attempt: number, lastError: ?Error, req: RelayRequest }) called before every retry attempt. You get one argument with following properties:
+    * `forceRetry()` - for proceeding request immediately
+    * `abort()` - for aborting retry request
+    * `attempt` - number of the attemp (starts from 1)
+    * `delay` - number of milliseconds when next retry will be called
+    * `lastError` - will keep Error from previous request
+    * `req` - retriable Request object
   * `allowMutations` - by default retries disabled for mutations, you may allow process retries for them passing `true`. (default: `false`)
   * `allowFormData` - by default retries disabled for file Uploads, you may enable it passing `true` (default: `false`)
+  * `forceRetry` - deprecated, use `beforeRetry` instead (default: `false`).
 * **batchMiddleware** - gather some period of time relay-requests and sends it as one http-request. You server must support batch request, [how to setup your server](https://github.com/relay-tools/react-relay-network-modern#example-how-to-enable-batching)
   * `batchUrl` - string. Url of the server endpoint for batch request execution. Can be function(requestMap) or Promise. (default: `/graphql/batch`)
   * `batchTimeout` - integer in milliseconds, period of time for gathering multiple requests before sending them to the server. Will delay sending of the requests on specified in this option period of time, so be careful and keep this value small. (default: `0`)
@@ -127,11 +133,11 @@ import { RelayNetworkLayer } from 'react-relay-network-modern/es';
   * `onProgress` - on progress callback function (`function(bytesCurrent: number, bytesTotal: number | null) => void`, total size will be null if size header is not set)
   * `sizeHeader` - response header with total size of response (default: `Content-Length`, useful when `Transfer-Encoding: chunked` is set)
 
-### Standalone package middlewares:
+### Standalone package middlewares
 
 * [**react-relay-network-modern-ssr**](https://github.com/relay-tools/react-relay-network-modern-ssr) - client/server middleware for server-side rendering (SSR). On server side it makes requests directly via `graphql-js` and your `schema`, cache payloads and serialize them for putting to HTML. On client side it loads provided payloads and renders them in sync mode without visible flashes and loaders.
 
-### Example of injecting NetworkLayer with middlewares on the **client side**.
+### Example of injecting NetworkLayer with middlewares on the **client side**
 
 ```js
 import { Environment, RecordSource, Store } from 'relay-runtime';
@@ -167,8 +173,9 @@ const network = new RelayNetworkLayer(
     retryMiddleware({
       fetchTimeout: 15000,
       retryDelays: attempt => Math.pow(2, attempt + 4) * 100, // or simple array [3200, 6400, 12800, 25600, 51200, 102400, 204800, 409600],
-      forceRetry: (cb, delay) => {
-        window.forceRelayRetry = cb;
+      beforeRetry: ({ forceRetry, abort, delay, attempt, lastError, req }) => {
+        if (attempt > 10) abort();
+        window.forceRelayRetry = forceRetry;
         console.log('call `forceRelayRetry()` for immediately retry! Or wait ' + delay + ' ms.');
       },
       statusCodes: [500, 503, 504],
@@ -216,7 +223,7 @@ const store = new Store(source);
 const environment = new Environment({ network, store });
 ```
 
-### Advanced options (2nd argument after middlewares)
+## Advanced options (2nd argument after middlewares)
 
 RelayNetworkLayer may accept additional options:
 
@@ -231,11 +238,11 @@ Available options:
 * **subscribeFn** - if you use subscriptions in your app, you may provide this function which will be passed to [RelayNetwork](https://github.com/facebook/relay/blob/master/packages/relay-runtime/network/RelayNetwork.js).
 * **noThrow** - **EXPERIMENTAL (May be deprecated in the future)** set true to not throw when an error response is given by the server, and to instead handle errors in your app code.
 
-### Server-side rendering (SSR)
+## Server-side rendering (SSR)
 
 See [`react-relay-network-modern-ssr](https://github.com/relay-tools/react-relay-network-modern-ssr) for SSR middleware.
 
-### How middlewares work internally
+## How middlewares work internally
 
 Middlewares on bottom layer use [fetch](https://github.com/github/fetch) method. So `req` is compliant with a `fetch()` options. And `res` can be obtained via `resPromise.then(res => ...)`, which returned by `fetch()`.
 
@@ -279,7 +286,7 @@ Middlewares use LIFO (last in, first out) stack. Or simply put - use `compose` f
 * call bubbling phase of `M1`
 * chain to `resPromise.then(res => res.json())` and pass this promise for resolving/rejecting Relay requests.
 
-# Batching several requests into one
+## Batching several requests into one
 
 Joseph Savona [wrote](https://github.com/facebook/relay/issues/1058#issuecomment-213592051): For legacy reasons, Relay splits "plural" root queries into individual queries. In general we want to diff each root value separately, since different fields may be missing for different root values.
 
@@ -344,13 +351,11 @@ const network = new RelayNetworkLayer([
 
 Internally batching in NetworkLayer prepare list of queries `[ {id, query, variables}, ...]` sends it to server. And server returns list of responces `[ {id, payload}, ...]`, (where `id` is the same value as client requested for identifying which data goes with which query, and `payload` is standard response of GraphQL server: `{ data, error }`).
 
-# Contribute
+## Contribute
 
 I actively welcome pull requests with code and doc fixes.
 Also if you made great middleware and want share it within this module, please feel free to open PR.
 
-[CHANGELOG](https://github.com/relay-tools/react-relay-network-modern/blob/master/CHANGELOG.md)
-
-# License
+## License
 
 [MIT](https://github.com/relay-tools/react-relay-network-modern/blob/master/LICENSE.md)
