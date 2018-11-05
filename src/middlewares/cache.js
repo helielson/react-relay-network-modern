@@ -1,10 +1,11 @@
 /* @flow */
 
-import { QueryResponseCache } from 'relay-runtime'; // eslint-disable-line import/no-extraneous-dependencies
+import { QueryResponseCache, createOperationSelector, Store } from 'relay-runtime'; // eslint-disable-line import/no-extraneous-dependencies
 import type { Middleware } from '../definition';
 import { isFunction } from '../utils';
 
 type CacheMiddlewareOpts = {|
+  store: Store,
   size?: number,
   ttl?: number,
   onInit?: (cache: QueryResponseCache) => any,
@@ -15,7 +16,7 @@ type CacheMiddlewareOpts = {|
 |};
 
 export default function queryMiddleware(opts?: CacheMiddlewareOpts): Middleware {
-  const { size, ttl, onInit, allowMutations, allowFormData, clearOnMutation, cacheErrors } =
+  const { size, ttl, onInit, allowMutations, allowFormData, clearOnMutation, cacheErrors, store } =
     opts || {};
   const cache = new QueryResponseCache({
     size: size || 100, // 100 requests
@@ -58,6 +59,11 @@ export default function queryMiddleware(opts?: CacheMiddlewareOpts): Middleware 
       const cachedRes = cache.get(queryId, variables);
       if (cachedRes) {
         return cachedRes;
+      }
+
+      const operationSelector = createOperationSelector(req.operation, req.variables);
+      if (store.check(operationSelector.root)) {
+        return store.lookup(operationSelector.root);
       }
 
       const res = await next(req);
